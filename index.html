@@ -29,7 +29,15 @@ background-image:
 header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(14,8,4,.72);border-bottom:2px solid var(--gold2)}
 h1{margin:0;font-size:1.3rem;color:var(--gold);letter-spacing:.06em;font-weight:700;flex:1}
 .pill{background:transparent;color:var(--gold);border:1.5px solid var(--gold2);border-radius:999px;padding:0 14px;font:inherit;font-size:.9rem;min-height:40px;cursor:pointer}
-.pill.ic{padding:0;width:40px;font-size:1.05rem}
+.pill.ic{padding:0;width:40px;font-size:1.05rem;display:grid;place-items:center}
+.ib{text-align:left;color:var(--chalk);margin-top:8px}
+.ib p{margin:8px 0;color:var(--chalk)}
+.ib h3{margin:16px 0 4px;font-size:1rem;color:var(--gold)}
+.ib ol{margin:10px 0 0;padding-left:26px}
+.ib li{padding:7px 0;border-bottom:1px solid rgba(243,234,208,.15)}
+.ib li::marker{color:var(--gold);font-weight:700}
+.ib .ex{color:var(--dim);font-size:.92rem;margin:2px 0 0}
+.ib b{color:var(--gold)}
 main{flex:1;min-height:0;display:grid;grid-template-columns:68px 1fr 68px;padding:10px 6px 0}
 .ctl{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}
 .c{width:56px;height:56px;border-radius:50%;font:inherit;font-size:2rem;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
@@ -74,13 +82,17 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <body>
 <header>
   <h1>TRUCO</h1>
-  <button class="pill" id="wins"></button>
-  <button class="pill" id="mode"></button>
+  <button class="pill ic" id="menu-b" aria-label="Menú"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5h16M2 10h16M2 15h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
 </header>
 <main id="main"></main>
 <footer>
   <button class="new" id="reset">Nueva partida</button>
 </footer>
+<div class="dlg" id="menu" role="dialog" aria-modal="true"><div class="card"><h2>Menú</h2><div class="bs">
+<button class="no" id="wins"></button><button class="no" id="mode"></button>
+<button class="no" id="m-order">🃏 Orden de las cartas</button><button class="no" id="m-env">🔢 Cómo contar el envido</button>
+<button class="yes" id="m-close">Cerrar</button></div></div></div>
+<div class="dlg" id="info" role="dialog" aria-modal="true"><div class="card pcard"><h2></h2><div class="ib"></div><div class="bs"><button class="yes" id="info-ok">Cerrar</button></div></div></div>
 <div class="dlg" id="pl" role="dialog" aria-modal="true"><div class="card pcard"><h2>Jugadores</h2><p>Anotá quién juega y se guarda el historial de cada uno.</p>
 <div class="grp"><label id="pl-ta"></label><input class="pn" data-i="0" maxlength="14" placeholder="Jugador 1" list="known"><input class="pn" data-i="1" maxlength="14" placeholder="Jugador 2" list="known"></div>
 <div class="grp"><label id="pl-tb"></label><input class="pn" data-i="2" maxlength="14" placeholder="Jugador 3" list="known"><input class="pn" data-i="3" maxlength="14" placeholder="Jugador 4" list="known"></div>
@@ -138,8 +150,8 @@ function update(){
     var h="";for(var g=0;g<S.max;g+=5){var n=Math.min(5,S[k]-g);if(n>0)h+=grp(n);}
     $("sec-"+k).innerHTML=h;
   });
-  $("mode").textContent="A "+S.max;
-  $("wins").textContent="🏆 "+S.wa+" – "+S.wb;
+  $("mode").textContent="🎯 Partida a "+S.max+" (cambiar a "+(S.max===30?15:30)+")";
+  $("wins").textContent="🏆 Historial · "+S.wa+" – "+S.wb;
   $("wins").setAttribute("aria-label","Partidas ganadas: "+S.na+" "+S.wa+", "+S.nb+" "+S.wb+". Tocar para ver jugadores.");
   document.querySelectorAll("[data-d]").forEach(function(b){
     var nm=b.dataset.k==="a"?S.na:S.nb,d=+b.dataset.d;
@@ -189,9 +201,15 @@ document.addEventListener("pointerup",stop);
 document.addEventListener("pointercancel",stop);
 document.addEventListener("contextmenu",function(e){if(e.target.closest("button"))e.preventDefault();});
 document.addEventListener("click",function(e){
+  if(e.target.id==="menu"||e.target.id==="info")e.target.classList.remove("on");
   var t=e.target.closest("button");if(!t)return;
+  if(t.closest("#menu"))$("menu").classList.remove("on");
   if(t.dataset.d){if(e.detail===0)add(t.dataset.k,+t.dataset.d);return;} // teclado
-  if(t.id==="reset"){
+  if(t.id==="menu-b")$("menu").classList.add("on");
+  else if(t.id==="m-order")info("Orden de las cartas",ORDEN);
+  else if(t.id==="m-env")info("Cómo contar el envido",ENVIDO);
+  else if(t.id==="info-ok")$("info").classList.remove("on");
+  else if(t.id==="reset"){
     if(S.a+S.b===0||S.win)newGame();
     else dlg("¿Nueva partida?","Se borra el puntaje actual.",[{t:"Sí, empezar",p:1,f:newGame},{t:"Cancelar"}]);
   }
@@ -205,6 +223,19 @@ document.addEventListener("click",function(e){
   else if(t.id==="pl-ok")$("pl").classList.remove("on");
   else if(t.id==="pl-clr")dlg("¿Borrar historial?","Se borran las partidas ganadas y el historial de todos los jugadores.",[{t:"Borrar",p:1,f:function(){S.wa=0;S.wb=0;S.tm={};S.cred=[];commit();renderList();}},{t:"Cancelar"}]);
 });
+
+// ayudas
+var ORDEN='<p>De la más fuerte (arriba) a la más débil (abajo).</p><ol>'+[
+ "Ancho de espadas","Ancho de bastos","7 de espadas","7 de oros","Los 3","Los 2","1 de copas y 1 de oros","Los 12","Los 11","Los 10","7 de copas y 7 de bastos","Los 6","Los 5","Los 4"
+].map(function(x){return "<li>"+x+"</li>";}).join("")+'</ol><p class="ex">Los 3, 2, 12, 11, 10, 6, 5 y 4 valen igual en todos los palos.</p>';
+var ENVIDO='<p>Las cartas 10, 11 y 12 (las negras) valen 0. Las demás valen su número.</p>'
+ +'<h3>Dos cartas del mismo palo</h3><p>Se suman sus valores y se agrega 20.</p>'
+ +'<ul style="padding-left:20px;margin:0"><li>6 + 7 → 6 + 7 + 20 = <b>33</b></li><li>12 + 7 (una negra) → 0 + 7 + 20 = <b>27</b></li><li>12 + 11 (dos negras) → 0 + 0 + 20 = <b>20</b></li></ul>'
+ +'<h3>Ninguna del mismo palo</h3><p>Vale la carta de mayor valor. Las negras valen 0.</p>'
+ +'<ul style="padding-left:20px;margin:0"><li>1, 11 y 12 de palos distintos → <b>1</b></li><li>6, 11 y 12 de palos distintos → <b>6</b></li></ul>'
+ +'<h3>Tres del mismo palo</h3><p>Si se juega sin Flor, se suman los valores de las dos cartas más altas y 20.</p>'
+ +'<ul style="padding-left:20px;margin:0"><li>4, 6 y 12 → 4 + 6 + 20 = <b>30</b></li></ul>';
+function info(t,h){var d=$("info");d.querySelector("h2").textContent=t;d.querySelector(".ib").innerHTML=h;d.classList.add("on");d.querySelector(".pcard").scrollTop=0;}
 
 // jugadores
 function renderList(){
