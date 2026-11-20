@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2a1a10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Truco">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Anotador de truco</title>
 <style>
 :root{--wood:#2f1f14;--wood2:#1e130b;--gold:#f0c75e;--gold2:#b8923a;--chalk:#f3ead0;--dim:rgba(243,234,208,.55);--stick:#efe3c0;--ink:#1d130b;--panel:rgba(14,8,4,.65);
@@ -236,6 +242,7 @@ document.addEventListener("change",function(e){
 function lock(){try{if(navigator.wakeLock&&document.visibilityState==="visible")navigator.wakeLock.request("screen").catch(function(){});}catch(e){}}
 document.addEventListener("visibilitychange",lock);lock();
 
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
 update();
 if(S.win){winShown=false;commit();}
 })();
